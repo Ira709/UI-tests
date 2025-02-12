@@ -1,0 +1,97 @@
+name: CI
+
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+       - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      docker:
+        image: docker:24.0.2
+        options: --privileged
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+
+      - name: Build Docker image
+        run: docker build -t my-ui-tests
+
+
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    services:
+      docker:
+        image: docker:24.0.2
+        options: --privileged
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Clean up existing containers
+        run:
+          docker-compose -f docker-compose.yml down || true
+          docker-compose -f docker-compose-tests.yml down || true
+
+      - name: Check and free up port 4444
+        run: |
+          if lsof -i :4444; then
+            echo "Port 4444 is in use& Freeing up..."
+            fuser -k 4444/tcp
+          fi
+          if lsof -i :8080; then
+            echo "Port 8080 is in use& Freeing up..."
+            fuser -k 8080/tcp
+          fi
+
+      - name: Pull Selenoid Chrome image
+        run: docker pull selenoid/vnc:chrome_114.0
+
+      - name: Start Selenoid and Selenoid UI
+        run: docker-compose -f docker-compose.yml up -d
+
+      - name: Run UI tests
+        run: docker-compose -f docker-compose.yml up --abort-on-container-exit
+
+      - name: Check Selenoid logs on failure
+        if: failure()
+        run: docker logs selenoid
+
+      - name: Stop services
+        if: always()
+        run: |
+          docker-compose -f docker-compose.yml down
+          docker-compose -f docker-compose-tests.yml down
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifacts@v3
+        with:
+          name: test-artifacts
+          path: |
+            ./video/
+            ./logs/

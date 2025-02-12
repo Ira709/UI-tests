@@ -1,0 +1,19 @@
+{
+  "chrome": {
+    "default": "114.0",
+    "versions": {
+      "114.0_ru": {
+        "port": "4444",
+        "image": "selenoid/vnc:chrome_114.0",
+        "env": ["LANG=ru_RU.UTF-8", "LANGUAGE=ru_RU.UTF-8", "LC_ALL=ru_RU.UTF-8"],
+        "additionalNetworks": ["ui-test_selenoid"]
+      },
+      "114.0_en": {
+        "port": "4444",
+        "image": "selenoid/vnc:chrome_114.0",
+        "env": ["LANG=en_US.UTF-8", "LANGUAGE=en_US.UTF-8", "LC_ALL=en_US.UTF-8"],
+        "additionalNetworks": ["ui-test_selenoid"]
+      }
+    }
+  }
+}

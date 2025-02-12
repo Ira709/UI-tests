@@ -1,0 +1,29 @@
+networks:
+  selenoid:
+
+services:
+  selenoid:
+    container_name: selenoid
+    image: "aerokube/selenoid:latest-release"
+    ports:
+      - "4444:4444"
+    volumes:
+      - ./config:/etc/selenoid/:ro
+      - ./video:/opt/selenoid/video
+      - ./logs:/opt/selenoid/logs
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: ["-conf", "/etc/selenoid/browser.json", "-container-network", "ui-test_selenoid", "-limit", "10", "-retry-count", "2"]
+    networks:
+      - selenoid
+
+
+  selenoid-ui:
+    container_name: selenoid-ui
+    image: "aerokube/selenoid-ui:latest-release"
+    links:
+      - selenoid
+    ports:
+      - "8080:8080"
+    command: ["--selenoid-uri", "https://selenoid:4444"]
+    networks:
+      - selenoid

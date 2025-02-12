@@ -1,0 +1,19 @@
+networks:
+  selenoid:
+
+services:
+  ui-tests:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+    working_dir: /app
+    environment:
+      - StartRemote=yes
+      - SELENOID_URI=http://selenoid:4444/wd/hub
+    command: mvn clean test
+    container_name: ui-tests
+    image: "aerokube/selenoid:latest-release"
+    ports:
+      - "5555:5555"
+    networks:
+      - selenoid
